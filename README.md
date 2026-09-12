@@ -75,16 +75,19 @@ python bridge.py                   # 前台运行；--probe 离线预览解析�
 
 ## ⚙️ 配置
 
-| 插件 userConfig / 环境变量 | 说明 |
+全部配置都是**键值对**，两处等价：插件设置界面（userConfig）或环境变量——
+hook 启动 daemon 时会把 userConfig 注入为环境变量，真实环境变量优先。
+
+| 插件设置键 / 等价环境变量 | 说明 |
 |---|---|
+| `app_id` + `app_secret` / `FEISHU_APP_ID` + `FEISHU_APP_SECRET` | 飞书应用凭据（必需；或 LARK_* 兼容） |
 | `notify_chat_id` / `FEISHU_NOTIFY_CHAT_ID` | 目标会话（`oc_xxx`）。**建议用专属群**做工作实况 feed，与官方回复通道分开 |
-| — / `FEISHU_APP_ID` + `FEISHU_APP_SECRET` | 飞书应用凭据（必需，或 LARK_* 兼容） |
+| `base_url` / `FEISHU_BASE_URL` | 默认 `https://open.feishu.cn`，Lark 国际版改 `https://open.larksuite.com` |
 | `context_total` / `BRIDGE_CONTEXT_TOTAL` | 模型上下文窗口，面板百分比用；默认 `1000000`（1M） |
-| — / `FEISHU_BASE_URL` | 默认 `https://open.feishu.cn`，Lark 国际版改 `https://open.larksuite.com` |
-| `auto_start` | 会话启动时自动拉起 daemon（`bridge.pid` 幂等，不会重复启动） |
 | `panel_fields` / `BRIDGE_PANEL_FIELDS` | 综合面板字段与顺序（fry-cards footer.fields 风格），可选值 `project, model, reasoning, tools, context, tokens, elapsed`；默认全部 |
-| — / `ROLLOUT_DIR` | rollout 目录，默认 `~/.zcode/cli/rollout` |
-| — / `BRIDGE_DEBUG` | `1` = 每行解析日志（排障用） |
+| `auto_start` | 会话启动时自动拉起 daemon（`bridge.pid` 幂等，不会重复启动） |
+| `rollout_dir` / `ROLLOUT_DIR` | rollout 目录，默认 `~/.zcode/cli/rollout` |
+| `debug` / `BRIDGE_DEBUG` | 布尔开关，每行解析日志（排障用） |
 
 凭据只走环境变量 / userConfig，不写入仓库；错误信息中的 token 与 secret 会打码后才落日志。
 
