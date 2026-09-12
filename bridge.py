@@ -45,9 +45,8 @@ LOADING_IMG_KEY = "img_v3_02vb_496bec09-4b43-4773-ad6b-0cdd103cd2bg"  # from her
 CTX_TOTAL = int(os.environ.get("BRIDGE_CONTEXT_TOTAL") or 1_000_000)  # model context window
 DEBUG = os.environ.get("BRIDGE_DEBUG", "") not in ("", "0")
 # stats-panel fields, order = display order (fry-cards footer.fields style)
-PANEL_FIELDS = [f.strip() for f in os.environ.get(
-    "BRIDGE_PANEL_FIELDS",
-    "project,model,reasoning,tools,context,tokens,elapsed").split(",") if f.strip()]  # model context window
+_PANEL_RAW = os.environ.get("BRIDGE_PANEL_FIELDS", "").strip()
+PANEL_FIELDS = [f.strip() for f in (_PANEL_RAW or "project,model,reasoning,tools,context,tokens,elapsed").split(",") if f.strip()]  # model context window
 
 APP_ID = os.environ.get("FEISHU_APP_ID") or os.environ.get("LARK_APP_ID") or ""
 APP_SECRET = os.environ.get("FEISHU_APP_SECRET") or os.environ.get("LARK_APP_SECRET") or ""
