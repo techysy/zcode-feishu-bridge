@@ -35,7 +35,8 @@ ROLLOUT_DIR = Path(os.environ.get("ROLLOUT_DIR") or (Path.home() / ".zcode" / "c
 POLL_SEC = 1.0
 UPDATE_MIN_INTERVAL = 1.0     # seconds between card content updates
 SEAL_IDLE_SEC = 300.0         # seal card after this much file inactivity
-MAX_BODY_CHARS = 24_000       # keep card markdown well under Feishu limits
+MAX_BODY_CHARS = 24_000       # hard backstop for card markdown size
+TEASER_CHARS = 300            # per-turn text preview — the client already shows full text
 STREAMING_ELEMENT_ID = "streaming_content"
 
 APP_ID = os.environ.get("FEISHU_APP_ID") or os.environ.get("LARK_APP_ID") or ""
@@ -248,19 +249,25 @@ def extract(entry: dict) -> dict | None:
     }
 
 
+def teaser(text: str, limit: int = TEASER_CHARS) -> str:
+    text = (text or "").strip()
+    if len(text) <= limit:
+        return text
+    return text[:limit].rstrip() + " ……"
+
+
 def render_body(turn: dict, turns: int, state: dict) -> str:
+    """Content only — model/turn info lives solely in the sealed card's footer."""
     parts = []
     if turn["text"]:
-        parts.append(turn["text"])
+        parts.append(teaser(turn["text"]))
     elif turn["tools"]:
         parts.append("⚙️ 正在使用工具：" + "、".join(dict.fromkeys(turn["tools"])))
     elif turn["reasoning"]:
-        parts.append("💭 " + turn["reasoning"][:500] + ("…" if len(turn["reasoning"]) > 500 else ""))
+        parts.append("💭 " + teaser(turn["reasoning"]))
     if not parts:
         return state.get("last_body", "…")
-    model = turn["model"].split("/")[-1]
-    meta_line = f"\n\n---\n🤖 {model} · 第 {turns} 轮 · {turn['duration']/1000:.1f}s" if turn["duration"] else ""
-    body = clip("\n\n".join(parts) + meta_line)
+    body = clip("\n\n".join(parts))
     state["last_body"] = body
     return body
 
