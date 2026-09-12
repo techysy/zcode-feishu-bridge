@@ -1,60 +1,133 @@
-# zcode-feishu-bridge
+# 🌉 zcode-feishu-bridge
 
-把 ZCode 的工作过程实时镜像到飞书：tail ZCode 的模型调用日志（`~/.zcode/cli/rollout/model-io-sess_*.jsonl`），每完成一轮模型调用就更新一张飞书流式卡片（CardKit 打字机效果）。**不修改 ZCode 任何代码**，天然免疫 ZCode 更新。
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![ZCode](https://img.shields.io/badge/ZCode-%E2%89%A53.11-2463eb)](https://github.com/zai-org/ZCode)
+[![Python](https://img.shields.io/badge/Python-%E2%89%A53.10-blue)](https://www.python.org/)
+[![当前版本](https://img.shields.io/badge/Release-v1.0.0-2463eb?logo=github&logoColor=white)](https://github.com/techysy/zcode-feishu-bridge/releases)
 
-> **定位**：过程实况 feed。ZCode 官方的飞书推送只投递最终回复（机器人气泡）；本桥接补的是任务进行中的逐轮进度，建议指向一个**专用群**，与官方回复互不干扰。
+> 🌉 把 ZCode 会话实时镜像到飞书流式卡片 — tail rollout 日志，不改 ZCode 一行代码
 
-```
+- [更新日志](CHANGELOG.md) · [运维指南（SKILL）](skills/feishu-bridge/SKILL.md) · [Agent 指南](AGENTS.md)
+
+---
+
+## ✨ 核心特性
+
+| 能力 | 说明 |
+|------|------|
+| 🎴 **流式卡片** | 飞书 CardKit 打字机效果，每完成一轮模型调用实时刷新 |
+| 📦 **多会话并行** | 每个 ZCode 会话一张卡，自动提取项目标签（📦），子代理会话自动跳过 |
+| 📊 **综合面板** | 封卡展示 fry-cards 同款统计行：`📦 项目 · 模型 · 💭推理 · 🔧工具 · 上下文 · ⏱️耗时` |
+| 🛡️ **摘要不镜像** | 卡片只做进度 feed（300 字预告），完整回复留在 ZCode 客户端，与官方推送互不重复 |
+| ⏹️ **自动封卡** | 任务收尾（`finishReason=stop`）或 5 分钟无活动 → 绿头「✅ 项目 · ZCode 完成」 |
+| 🔁 **双模式发送** | CardKit 实体卡优先（打字机），缺卡片权限自动降级 message PATCH（其余不变） |
+| 🔌 **零侵入零依赖** | 纯 Python 标准库；不改 ZCode 源码，天然免疫 ZCode 更新 |
+| 🚀 **插件化** | 标准插件封装：SessionStart 自动拉起、`/feishu-bridge` 命令、userConfig 配置 |
+
+---
+
+## 🏗️ 工作原理
+
+```text
 ZCode 会话（每个任务）
-  └─ rollout JSONL 逐轮落盘（response.text / reasoning / toolCalls / finishReason）
-       └─ bridge.py（轮询 tail，识别活动会话）
-            └─ CardKit 实体卡：创建 → 逐轮更新 streaming 元素 → finish=stop 封卡（绿头）
+  └─ rollout JSONL 逐轮落盘  ~/.zcode/cli/rollout/model-io-sess_*.jsonl
+       │   response.text / reasoningText / toolCalls / usage / finishReason
+       ▼
+bridge.py 守护进程（轮询 tail，按会话分卡，项目标签自动提取）
+       ▼
+飞书 CardKit v1 实体卡
+  ├─ 进行中：蓝头「🔧 ZCode 工作中」+ 300 字摘要 + 打字机 + loading
+  └─ 收  尾：绿头「✅ 项目 · ZCode 完成」+ 摘要 + 综合面板
+       （📦 项目 · 模型 · 💭推理轮 · 🔧工具调用 · 上下文 · ⏱️ 耗时）
 ```
 
-## 特性
+隐私：桥接只读模型**回复**侧数据推送到你自己的会话；rollout 里的请求体
+（system prompt、历史消息）不经过桥接、不出本机。
 
-- **逐轮流式**：模型每轮结束即更新卡片（工具调用轮显示工具名，文本轮显示正文，打字机动画）。
-- **自动封卡**：`finishReason=stop` 或 5 分钟无活动 → 卡片变绿头「✅ ZCode 完成」+ meta 脚注；下个任务自动开新卡。
-- **多会话跟踪**：自动跟随 mtime 最新的活动会话文件。
-- **双模式**：CardKit 实体卡优先（打字机流式）；应用缺 cardkit 权限时自动降级为 message PATCH 整卡替换（无动画，其余相同）。
-- **零依赖**：纯 Python 标准库（urllib/json），Python 3.10+ 直接跑。
+---
 
-## 配置（环境变量，与 zcode-feishu-card 插件共用）
+## 🚀 快速安装
 
-| 变量 | 说明 |
-|---|---|
-| `FEISHU_APP_ID` / `FEISHU_APP_SECRET` | 飞书应用凭据（必需） |
-| `FEISHU_NOTIFY_CHAT_ID` | 接收卡片的会话（单聊或群 `oc_xxx`，必需；机器人须在该会话中） |
-| `FEISHU_BASE_URL` | 默认 `https://open.feishu.cn`，Lark 国际版改 `https://open.larksuite.com` |
-| `ROLLOUT_DIR` | 默认 `~/.zcode/cli/rollout` |
-| `BRIDGE_LOG` | 日志文件，默认脚本目录下 `bridge.log` |
+### 方式一：ZCode 插件（推荐）
 
-应用需要权限：`im:message`（发消息）+ `cardkit:card`（卡片读写，缺了会自动降级 PATCH 模式）。
+Settings → Plugin Management → Discover → `+` → 添加本仓库：
 
-## 作为 ZCode 插件安装
+```text
+https://github.com/techysy/zcode-feishu-bridge
+```
 
-Settings → Plugin Management → Discover → `+` → 添加本仓库（Git URL `https://github.com/techysy/zcode-feishu-bridge` 或本地目录），然后：
+安装后在插件设置里填 `notify_chat_id`（收卡片的群/单聊 `oc_xxx`），需要开机自动拉起就打开 `auto_start`。
 
-- 在插件设置里填 `notify_chat_id`（收卡片的群/单聊）、按需设 `context_total`；
-- 打开 `auto_start` 后，每次会话启动自动拉起 daemon（`bridge.pid` 幂等，不会重复启动）；
-- 也可以不装插件，直接 `python bridge.py` 手动跑。
-
-## 使用
+### 方式二：手动运行
 
 ```bash
-python bridge.py          # 前台运行，Ctrl+C 退出
-python bridge.py --probe  # 离线：解析最新 rollout，打印每轮将渲染的卡片内容
+git clone https://github.com/techysy/zcode-feishu-bridge.git
+cd zcode-feishu-bridge
+set FEISHU_APP_ID=cli_xxx          # 飞书应用凭据
+set FEISHU_APP_SECRET=xxx
+set FEISHU_NOTIFY_CHAT_ID=oc_xxx   # 目标会话（机器人须在该会话中）
+python bridge.py                   # 前台运行；--probe 离线预览解析结果
 ```
 
-日志看 `bridge.log`。确认卡片出现在目标会话即工作正常。
+飞书应用需要权限：`im:message`（发消息）+ `cardkit:card`（卡片读写，缺了自动降级 PATCH 模式）。
 
-## 已验证行为（2026-09-12）
+---
 
-- cardkit 创建/元素流式更新/封卡全链路（`{"type":"card_json","data":...}` 信封；settings 关流式用 **PATCH**）
-- schema 2.0 无 `note` 组件 → 脚注用 `markdown` + `text_size: "notation"`
-- 多进程同时 tail 同一文件会重复建卡 —— 只跑一个实例
+## ⚙️ 配置
 
-## 已知边界
+| 插件 userConfig / 环境变量 | 说明 |
+|---|---|
+| `notify_chat_id` / `FEISHU_NOTIFY_CHAT_ID` | 目标会话（`oc_xxx`）。**建议用专属群**做工作实况 feed，与官方回复通道分开 |
+| — / `FEISHU_APP_ID` + `FEISHU_APP_SECRET` | 飞书应用凭据（必需，或 LARK_* 兼容） |
+| `context_total` / `BRIDGE_CONTEXT_TOTAL` | 模型上下文窗口，面板百分比用；默认 `1000000`（1M） |
+| — / `FEISHU_BASE_URL` | 默认 `https://open.feishu.cn`，Lark 国际版改 `https://open.larksuite.com` |
+| `auto_start` | 会话启动时自动拉起 daemon（`bridge.pid` 幂等，不会重复启动） |
+| — / `ROLLOUT_DIR` | rollout 目录，默认 `~/.zcode/cli/rollout` |
+| — / `BRIDGE_DEBUG` | `1` = 每行解析日志（排障用） |
 
-- 粒度是**逐轮**（模型调用完成即更新），不是 token 级打字机——卡片上的动画是飞书流式卡的呈现效果，数据源按轮推进。
-- bridge 只读 rollout 日志，推送到**你自己配置的会话**；不会读取或发送 rollout 里的请求体（system prompt、历史消息都不出本机，只有 `response.text` 摘要上卡）。
+凭据只走环境变量 / userConfig，不写入仓库；错误信息中的 token 与 secret 会打码后才落日志。
+
+---
+
+## 🖥️ 命令
+
+安装插件后可用 `/zcode-feishu-bridge:feishu-bridge [start|stop|status]`；手动运维：
+
+```bash
+python bridge.py            # 前台启动（后台用普通后台机制即可）
+python bridge.py --probe    # 离线：解析最新 rollout，打印每轮将渲染的内容
+```
+
+进度与错误看 `bridge.log`。
+
+---
+
+## 故障排查
+
+| 现象 | 原因与处理 |
+|---|---|
+| 不出卡 | 看 `bridge.log`：`no transport` = 缺凭据；`no chat_id` = 未配目标会话；send 报错带飞书错误码 |
+| 每条动作出现 N 张卡 | 起了 N 个 daemon——全杀只留一个（Windows：`taskkill /PID <pid> /T /F`） |
+| 没有打字机动画 | 应用缺 `cardkit:card` 权限，已自动降级 PATCH 模式；开通权限后重启 daemon |
+| 时间差 8 小时 | 已修复为本地时区；若复现请提 issue |
+| 收不到某些会话 | 子代理会话（`x-zcode-session-type != main`）被有意过滤，只镜像主会话 |
+
+更多运维细节见 [SKILL](skills/feishu-bridge/SKILL.md) 与 [AGENTS.md](AGENTS.md)
+（CardKit API 的坑：信封格式、settings 用 PATCH、2.0 无 note 组件、sequence 递增——都有记录）。
+
+---
+
+## 🔗 相关项目
+
+- **[hermes-fry-cards](https://github.com/techysy/hermes-fry-cards)** — 同作者的 Hermes Gateway
+  飞书流式卡片插件。本项目的流式卡片视觉（loading 图标、综合面板、渐变上下文条）均致敬/取材于它；
+  区别在于 fry-cards 面向「飞书 ↔ bot」对话场景（patch 网关源码），本项目面向「ZCode 本地会话 →
+  飞书实况」场景（tail 落盘日志，零侵入）。
+- **[zcode-feishu-card](https://github.com/techysy/zcode-feishu-card)** — 同作者的另一个 ZCode 插件：
+  会话内主动发送飞书卡片通知（MCP 工具 + Stop hook），与本桥接互补。
+
+---
+
+## 📄 许可证
+
+[MIT](LICENSE)

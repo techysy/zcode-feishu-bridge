@@ -1,12 +1,14 @@
 {
   "name": "zcode-feishu-bridge",
-  "owner": { "name": "techysy" },
+  "owner": {
+    "name": "techysy"
+  },
   "plugins": [
     {
       "name": "zcode-feishu-bridge",
       "source": ".",
       "description": "Mirror live ZCode sessions into Feishu streaming cards (CardKit typewriter, per-turn stats panel).",
-      "version": "0.1.0"
+      "version": "1.0.0"
     }
   ]
 }

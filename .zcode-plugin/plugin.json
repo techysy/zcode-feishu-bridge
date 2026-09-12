@@ -5,7 +5,7 @@
     "en": "Mirror live ZCode sessions into Feishu streaming cards: tails ZCode rollout logs and renders per-turn progress (tools, reasoning, context usage, elapsed) as a CardKit typewriter card in a dedicated chat. Zero source patching, zero dependencies.",
     "zh-CN": "把 ZCode 会话实时镜像到飞书流式卡片：tail rollout 日志，逐轮更新综合面板（模型/推理/工具/上下文/耗时）到专属会话的打字机卡片。不改 ZCode 源码、零依赖。"
   },
-  "version": "0.1.0",
+  "version": "1.0.0",
   "author": {
     "name": "techysy"
   },
