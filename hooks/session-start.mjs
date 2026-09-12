@@ -33,23 +33,28 @@ if (existsSync(pidfile)) {
   }
 }
 
-const python = process.platform === "win32" ? "python" : "python3";
-const child = spawn(python, ["bridge.py"], {
-  cwd: root,
-  detached: true,
-  stdio: "ignore",
-  env: {
-    ...process.env,
-    // all plugin userConfig → daemon env (daemon reads env only; real env vars still win as fallback)
-    FEISHU_APP_ID: process.env.FEISHU_APP_ID || process.env.ZCODE_USER_CONFIG_APP_ID || "",
-    FEISHU_APP_SECRET: process.env.FEISHU_APP_SECRET || process.env.ZCODE_USER_CONFIG_APP_SECRET || "",
-    FEISHU_BASE_URL: process.env.FEISHU_BASE_URL || process.env.ZCODE_USER_CONFIG_BASE_URL || "",
-    FEISHU_NOTIFY_CHAT_ID: process.env.FEISHU_NOTIFY_CHAT_ID || process.env.ZCODE_USER_CONFIG_NOTIFY_CHAT_ID || "",
-    BRIDGE_CONTEXT_TOTAL: process.env.BRIDGE_CONTEXT_TOTAL || process.env.ZCODE_USER_CONFIG_CONTEXT_TOTAL || "1000000",
-    BRIDGE_PANEL_FIELDS: process.env.BRIDGE_PANEL_FIELDS || process.env.ZCODE_USER_CONFIG_PANEL_FIELDS || "",
-    ROLLOUT_DIR: process.env.ROLLOUT_DIR || process.env.ZCODE_USER_CONFIG_ROLLOUT_DIR || "",
-    BRIDGE_DEBUG: process.env.BRIDGE_DEBUG || (process.env.ZCODE_USER_CONFIG_DEBUG || ""),
-  },
+// pythonw = windowless interpreter; windowsHide as belt-and-braces — never pop a console
+const python = process.platform === "win32" ? "pythonw.exe" : "python3";
+const childEnv = {
+  ...process.env,
+  // all plugin userConfig → daemon env (daemon reads env only; real env vars still win as fallback)
+  FEISHU_APP_ID: process.env.FEISHU_APP_ID || process.env.ZCODE_USER_CONFIG_APP_ID || "",
+  FEISHU_APP_SECRET: process.env.FEISHU_APP_SECRET || process.env.ZCODE_USER_CONFIG_APP_SECRET || "",
+  FEISHU_BASE_URL: process.env.FEISHU_BASE_URL || process.env.ZCODE_USER_CONFIG_BASE_URL || "",
+  FEISHU_NOTIFY_CHAT_ID: process.env.FEISHU_NOTIFY_CHAT_ID || process.env.ZCODE_USER_CONFIG_NOTIFY_CHAT_ID || "",
+  BRIDGE_CONTEXT_TOTAL: process.env.BRIDGE_CONTEXT_TOTAL || process.env.ZCODE_USER_CONFIG_CONTEXT_TOTAL || "1000000",
+  BRIDGE_PANEL_FIELDS: process.env.BRIDGE_PANEL_FIELDS || process.env.ZCODE_USER_CONFIG_PANEL_FIELDS || "",
+  ROLLOUT_DIR: process.env.ROLLOUT_DIR || process.env.ZCODE_USER_CONFIG_ROLLOUT_DIR || "",
+  BRIDGE_DEBUG: process.env.BRIDGE_DEBUG || (process.env.ZCODE_USER_CONFIG_DEBUG || ""),
+};
+let child = spawn(python, ["bridge.py"], {
+  cwd: root, detached: true, stdio: "ignore", windowsHide: true, env: childEnv,
+});
+child.on("error", () => {  // pythonw not on PATH → console python, still hidden
+  child = spawn("python", ["bridge.py"], {
+    cwd: root, detached: true, stdio: "ignore", windowsHide: true, env: childEnv,
+  });
+  child.unref();
 });
 child.unref();
 
