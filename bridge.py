@@ -39,9 +39,10 @@ SEAL_IDLE_SEC = 300.0         # seal card after this much file inactivity
 MAX_BODY_CHARS = 24_000       # hard backstop for card markdown size
 TEASER_CHARS = 300            # per-turn text preview — the client already shows full text
 STREAMING_ELEMENT_ID = "streaming_content"
+PANEL_ELEMENT_ID = "panel_meta"          # fry-cards 综合面板统计行
 LOADING_ELEMENT_ID = "loading_icon"
 LOADING_IMG_KEY = "img_v3_02vb_496bec09-4b43-4773-ad6b-0cdd103cd2bg"  # from hermes-fry-cards
-CTX_TOTAL = int(os.environ.get("BRIDGE_CONTEXT_TOTAL") or 200_000)  # model context window
+CTX_TOTAL = int(os.environ.get("BRIDGE_CONTEXT_TOTAL") or 1_000_000)  # model context window
 DEBUG = os.environ.get("BRIDGE_DEBUG", "") not in ("", "0")  # model context window
 
 APP_ID = os.environ.get("FEISHU_APP_ID") or os.environ.get("LARK_APP_ID") or ""
@@ -107,7 +108,8 @@ def call_api(method: str, path: str, body: dict | None = None) -> dict:
 
 # ── card shapes (mirroring hermes-fry-cards cardkit streaming card) ─────────
 
-def streaming_card(text: str, title: str = "🔧 ZCode 工作中", template: str = "blue") -> dict:
+def streaming_card(text: str, title: str = "🔧 ZCode 工作中", template: str = "blue",
+                   panel: str = "⏱️ 0s") -> dict:
     return {
         "schema": "2.0",
         "config": {
@@ -126,6 +128,12 @@ def streaming_card(text: str, title: str = "🔧 ZCode 工作中", template: str
                 "tag": "markdown", "content": text, "text_align": "left",
                 "text_size": "normal_v2", "margin": "0px 0px 0px 0px",
                 "element_id": STREAMING_ELEMENT_ID,
+            },
+            # fry-cards 综合面板统计行（每轮更新）
+            {
+                "tag": "markdown", "content": panel, "text_align": "left",
+                "text_size": "notation", "margin": "0px 0px 0px 0px",
+                "element_id": PANEL_ELEMENT_ID,
             },
             # spinning loader (element shape borrowed from hermes-fry-cards)
             {
@@ -175,6 +183,9 @@ class LiveCard:
         self.sequence = 0         # cardkit mutations need a monotonic sequence
         self.ctx = 0              # last turn's inputTokens ≈ current context size
         self.out_total = 0        # cumulative outputTokens across turns
+        self.reasoning_turns = 0  # turns that produced reasoning text
+        self.tools_total = 0      # total tool calls across turns
+        self.first_at = ""        # first turn timestamp → elapsed base
 
     def _next_seq(self) -> int:
         self.sequence += 1
@@ -215,9 +226,13 @@ class LiveCard:
                          {"content": text, "sequence": self._next_seq()})
             if r.get("code") != 0:
                 log(f"element update failed: {r.get('code')} {r.get('msg')}")
+            r = call_api("PUT", f"/cardkit/v1/cards/{self.card_id}/elements/{PANEL_ELEMENT_ID}/content",
+                         {"content": meta, "sequence": self._next_seq()})
+            if r.get("code") != 0:
+                log(f"panel update failed: {r.get('code')} {r.get('msg')}")
         elif self.message_id:
             r = call_api("PATCH", f"/im/v1/messages/{self.message_id}",
-                         {"content": json.dumps(streaming_card(text), ensure_ascii=False)})
+                         {"content": json.dumps(streaming_card(text, panel=meta), ensure_ascii=False)})
             if r.get("code") != 0:
                 log(f"patch update failed: {r.get('code')} {r.get('msg')}")
         self.last_update = now
@@ -291,6 +306,25 @@ def context_text(used: int, total: int) -> str:
         return compact(used)
     pct = min(used / total * 100, 100)
     return f"{context_bar(used, total)} {compact(used)}/{compact(total)} ({pct:.0f}%)"
+
+
+def fmt_elapsed(seconds: float) -> str:
+    return f"{seconds:.1f}s" if seconds < 60 else f"{int(seconds // 60)}m {int(seconds % 60)}s"
+
+
+def fry_meta_line(card, model: str, at: str) -> str:
+    """'🍟 ⇲glm-5.3-flash · 💭0 · 🔧22 · 243.7k/1.0m (24%) · ⏱️ 18m 42s' — fry-cards 综合面板."""
+    parts = [f"🍟 ⇲{model.split('/')[-1]}", f"💭{card.reasoning_turns}", f"🔧{card.tools_total}"]
+    if card.ctx:
+        pct = min(card.ctx / CTX_TOTAL * 100, 100)
+        parts.append(f"{compact(card.ctx)}/{compact(CTX_TOTAL)} ({pct:.0f}%)")
+    try:
+        t0 = datetime.fromisoformat(str(card.first_at).replace("Z", "+00:00"))
+        t1 = datetime.fromisoformat(str(at).replace("Z", "+00:00"))
+        parts.append(f"⏱️ {fmt_elapsed(abs((t1 - t0).total_seconds()))}")
+    except (ValueError, TypeError):
+        pass
+    return " · ".join(parts)
 
 
 def extract(entry: dict) -> dict | None:
@@ -413,12 +447,11 @@ def watch() -> None:
                     u = turn["usage"]
                     card.ctx = int(u.get("inputTokens") or 0) or card.ctx
                     card.out_total += int(u.get("outputTokens") or 0)
-                    meta = f"{turn['model'].split('/')[-1]} · {card.turns} 轮"
-                    if card.ctx:
-                        meta += f" · 上下文 {context_text(card.ctx, CTX_TOTAL)}"
-                    if card.out_total:
-                        meta += f" · 输出累计 {compact(card.out_total)}"
-                    card.meta = meta + f" · 最后活动 {local_hhmmss(turn['at'])}"
+                    if turn["reasoning"]:
+                        card.reasoning_turns += 1
+                    card.tools_total += len(turn["tools"])
+                    card.first_at = card.first_at or turn["at"]
+                    card.meta = fry_meta_line(card, turn["model"], turn["at"])
                     body = render_body(turn, card.turns, state)
                     card.last_text = body
                     if turn["finish"] == "stop":
