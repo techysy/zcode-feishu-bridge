@@ -18,9 +18,33 @@
     "notification"
   ],
   "userConfig": {
+    "app_id": {
+      "title": "Feishu App ID",
+      "description": "Feishu app credentials (cli_xxx). Leave empty to use environment variables FEISHU_APP_ID/FEISHU_APP_SECRET.",
+      "type": "string",
+      "default": ""
+    },
+    "app_secret": {
+      "title": "Feishu App Secret",
+      "description": "Feishu app secret. Stored locally in ZCode config, never committed.",
+      "type": "string",
+      "default": ""
+    },
+    "base_url": {
+      "title": "Feishu base URL",
+      "description": "https://open.feishu.cn (default) or https://open.larksuite.com for Lark.",
+      "type": "string",
+      "default": ""
+    },
     "notify_chat_id": {
       "title": "Feishu chat id",
       "description": "Target chat (oc_xxx) that receives the live cards. The app bot must be in that chat. Recommended: a dedicated group used as the work-log feed.",
+      "type": "string",
+      "default": ""
+    },
+    "rollout_dir": {
+      "title": "Rollout directory",
+      "description": "ZCode rollout log directory. Default: ~/.zcode/cli/rollout",
       "type": "string",
       "default": ""
     },
@@ -30,17 +54,23 @@
       "type": "string",
       "default": "1000000"
     },
+    "panel_fields": {
+      "title": "Panel fields",
+      "description": "Stats-panel fields and order, comma separated. Available: project, model, reasoning, tools, context, tokens, elapsed. Default: project,model,reasoning,tools,context,tokens,elapsed",
+      "type": "string",
+      "default": "project,model,reasoning,tools,context,tokens,elapsed"
+    },
     "auto_start": {
       "title": "Auto start bridge",
       "description": "Start the bridge daemon automatically on session start (requires Feishu credentials in environment).",
       "type": "boolean",
       "default": "false"
     },
-    "panel_fields": {
-      "title": "Panel fields",
-      "description": "Stats-panel fields and order, comma separated. Available: project, model, reasoning, tools, context, tokens, elapsed. Default: project,model,reasoning,tools,context,tokens,elapsed",
-      "type": "string",
-      "default": "project,model,reasoning,tools,context,tokens,elapsed"
+    "debug": {
+      "title": "Debug logging",
+      "description": "Log every parsed rollout line to bridge.log (troubleshooting).",
+      "type": "boolean",
+      "default": "false"
     }
   }
 }
