@@ -39,6 +39,9 @@ SEAL_IDLE_SEC = 300.0         # seal card after this much file inactivity
 MAX_BODY_CHARS = 24_000       # hard backstop for card markdown size
 TEASER_CHARS = 300            # per-turn text preview — the client already shows full text
 STREAMING_ELEMENT_ID = "streaming_content"
+LOADING_ELEMENT_ID = "loading_icon"
+LOADING_IMG_KEY = "img_v3_02vb_496bec09-4b43-4773-ad6b-0cdd103cd2bg"  # from hermes-fry-cards
+CTX_TOTAL = int(os.environ.get("BRIDGE_CONTEXT_TOTAL") or 200_000)  # model context window
 
 APP_ID = os.environ.get("FEISHU_APP_ID") or os.environ.get("LARK_APP_ID") or ""
 APP_SECRET = os.environ.get("FEISHU_APP_SECRET") or os.environ.get("LARK_APP_SECRET") or ""
@@ -117,11 +120,19 @@ def streaming_card(text: str, title: str = "🔧 ZCode 工作中", template: str
             "summary": {"content": title},
         },
         "header": {"title": {"tag": "plain_text", "content": title}, "template": template},
-        "body": {"elements": [{
-            "tag": "markdown", "content": text, "text_align": "left",
-            "text_size": "normal_v2", "margin": "0px 0px 0px 0px",
-            "element_id": STREAMING_ELEMENT_ID,
-        }]},
+        "body": {"elements": [
+            {
+                "tag": "markdown", "content": text, "text_align": "left",
+                "text_size": "normal_v2", "margin": "0px 0px 0px 0px",
+                "element_id": STREAMING_ELEMENT_ID,
+            },
+            # spinning loader (element shape borrowed from hermes-fry-cards)
+            {
+                "tag": "markdown", "content": " ",
+                "icon": {"tag": "custom_icon", "img_key": LOADING_IMG_KEY, "size": "16px 16px"},
+                "element_id": LOADING_ELEMENT_ID,
+            },
+        ]},
     }
 
 
@@ -248,7 +259,37 @@ def local_hhmmss(iso_utc: str) -> str:
 
 
 def compact(n: int) -> str:
+    if n >= 1_000_000:
+        return f"{n/1_000_000:.1f}m"
     return f"{n/1000:.1f}k" if n >= 1000 else str(n)
+
+
+_BAR_STEPS = ("█", "▓", "▒", "░")  # density gradient, ported from hermes-fry-cards
+
+
+def context_bar(used: int, total: int, width: int = 8) -> str:
+    if total <= 0:
+        return ""
+    n = min(used / total * 100, 100) / 100 * width
+    cells = []
+    for i in range(width):
+        pos = i + 0.5
+        if pos <= n:
+            cells.append("█" if n - pos >= 0.5 else "▓" if n - pos >= 0.25 else "▒")
+        elif pos - 1 <= n:
+            frac = n - (pos - 1)
+            cells.append("▓" if frac > 0.66 else "▒" if frac > 0.33 else "░")
+        else:
+            cells.append("░")
+    return "".join(cells)
+
+
+def context_text(used: int, total: int) -> str:
+    """'███▓▒░░░ 86.5k/200.0k (43%)' — hermes-fry-cards text_bar style."""
+    if total <= 0:
+        return compact(used)
+    pct = min(used / total * 100, 100)
+    return f"{context_bar(used, total)} {compact(used)}/{compact(total)} ({pct:.0f}%)"
 
 
 def extract(entry: dict) -> dict | None:
@@ -368,7 +409,7 @@ def watch() -> None:
                     card.out_total += int(u.get("outputTokens") or 0)
                     meta = f"{turn['model'].split('/')[-1]} · {card.turns} 轮"
                     if card.ctx:
-                        meta += f" · 上下文 {compact(card.ctx)}"
+                        meta += f" · 上下文 {context_text(card.ctx, CTX_TOTAL)}"
                     if card.out_total:
                         meta += f" · 输出累计 {compact(card.out_total)}"
                     card.meta = meta + f" · 最后活动 {local_hhmmss(turn['at'])}"
