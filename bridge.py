@@ -316,11 +316,11 @@ def fmt_elapsed(seconds: float) -> str:
 
 
 def fry_meta_line(card, model: str, at: str) -> str:
-    """'[📦 proj ·] 🍟 ⇲glm-5.3-flash · 💭0 · 🔧22 · 243.7k/1.0m (24%) · ⏱️ 18m 42s'."""
+    """'[📦 proj ·] 🍟 glm-5.3-flash · 💭0 · 🔧22 · 243.7k/1.0m (24%) · ⏱️ 18m 42s'."""
     parts = []
     if getattr(card, "project", ""):
         parts.append(f"📦 {card.project}")
-    parts += [f"🍟 ⇲{model.split('/')[-1]}", f"💭{card.reasoning_turns}", f"🔧{card.tools_total}"]
+    parts += [f"🍟 {model.split('/')[-1]}", f"💭{card.reasoning_turns}", f"🔧{card.tools_total}"]
     if card.ctx:
         pct = min(card.ctx / CTX_TOTAL * 100, 100)
         parts.append(f"{compact(card.ctx)}/{compact(CTX_TOTAL)} ({pct:.0f}%)")
