@@ -145,12 +145,12 @@ def streaming_card(text: str, title: str = "🔧 ZCode 工作中", template: str
     }
 
 
-def sealed_card(text: str, meta: str) -> dict:
+def sealed_card(text: str, meta: str, title: str = "✅ ZCode 完成") -> dict:
     return {
         "schema": "2.0",
         "config": {"width_mode": "default", "streaming_mode": False,
-                   "summary": {"content": "✅ ZCode 完成"}},
-        "header": {"title": {"tag": "plain_text", "content": "✅ ZCode 完成"}, "template": "green"},
+                   "summary": {"content": title}},
+        "header": {"title": {"tag": "plain_text", "content": title}, "template": "green"},
         "body": {"elements": [
             {"tag": "markdown", "content": text, "text_size": "normal_v2"},
             {"tag": "hr"},
@@ -186,6 +186,7 @@ class LiveCard:
         self.reasoning_turns = 0  # turns that produced reasoning text
         self.tools_total = 0      # total tool calls across turns
         self.first_at = ""        # first turn timestamp → elapsed base
+        self.project = ""        # project label discovered from session content
 
     def _next_seq(self) -> int:
         self.sequence += 1
@@ -245,8 +246,9 @@ class LiveCard:
         if not (self.card_id or self.message_id):
             return
         if self.mode == "cardkit":
+            _stitle = f"✅ {self.project} · ZCode 完成" if self.project else "✅ ZCode 完成"
             r = call_api("PUT", f"/cardkit/v1/cards/{self.card_id}",
-                         {"card": {"type": "card_json", "data": json.dumps(sealed_card(text, meta), ensure_ascii=False)},
+                         {"card": {"type": "card_json", "data": json.dumps(sealed_card(text, meta, _stitle), ensure_ascii=False)},
                           "sequence": self._next_seq()})
             if r.get("code") != 0:
                 log(f"card update failed: {r.get('code')} {r.get('msg')}")
@@ -256,8 +258,9 @@ class LiveCard:
             if r.get("code") != 0:
                 log(f"close streaming failed (non-fatal): {r.get('code')} {r.get('msg')}")
         elif self.message_id:
+            _stitle = f"✅ {self.project} · ZCode 完成" if self.project else "✅ ZCode 完成"
             call_api("PATCH", f"/im/v1/messages/{self.message_id}",
-                     {"content": json.dumps(sealed_card(text, meta), ensure_ascii=False)})
+                     {"content": json.dumps(sealed_card(text, meta, _stitle), ensure_ascii=False)})
         log(f"[{self.session}] card sealed")
 
 
@@ -313,8 +316,11 @@ def fmt_elapsed(seconds: float) -> str:
 
 
 def fry_meta_line(card, model: str, at: str) -> str:
-    """'🍟 ⇲glm-5.3-flash · 💭0 · 🔧22 · 243.7k/1.0m (24%) · ⏱️ 18m 42s' — fry-cards 综合面板."""
-    parts = [f"🍟 ⇲{model.split('/')[-1]}", f"💭{card.reasoning_turns}", f"🔧{card.tools_total}"]
+    """'[📦 proj ·] 🍟 ⇲glm-5.3-flash · 💭0 · 🔧22 · 243.7k/1.0m (24%) · ⏱️ 18m 42s'."""
+    parts = []
+    if getattr(card, "project", ""):
+        parts.append(f"📦 {card.project}")
+    parts += [f"🍟 ⇲{model.split('/')[-1]}", f"💭{card.reasoning_turns}", f"🔧{card.tools_total}"]
     if card.ctx:
         pct = min(card.ctx / CTX_TOTAL * 100, 100)
         parts.append(f"{compact(card.ctx)}/{compact(CTX_TOTAL)} ({pct:.0f}%)")
@@ -325,6 +331,21 @@ def fry_meta_line(card, model: str, at: str) -> str:
     except (ValueError, TypeError):
         pass
     return " · ".join(parts)
+
+
+def find_project(entry: dict) -> str:
+    """Best-effort project label: first sensible dir under GitHub Files\\ or workspace\\."""
+    for m in ((entry.get("request") or {}).get("messages") or [])[:4]:
+        c = str(m.get("content"))
+        for match in re.findall(r"[A-Za-z]:\\[^\"]+", c)[:20]:
+            p = match.replace("/", "\\")
+            for marker in ("GitHub Files\\", "workspace\\"):
+                i = p.rfind(marker)
+                if i >= 0:
+                    seg = p[i + len(marker):].split("\\")[0]
+                    if seg and not seg.endswith(":"):
+                        return seg
+    return ""
 
 
 def extract(entry: dict) -> dict | None:
@@ -341,6 +362,7 @@ def extract(entry: dict) -> dict | None:
         "duration": entry.get("durationMs"),
         "at": entry.get("completedAt", ""),
         "usage": resp.get("usage") or {},
+        "stype": ((entry.get("request") or {}).get("headers") or {}).get("x-zcode-session-type", ""),
     }
 
 
@@ -434,11 +456,16 @@ def watch() -> None:
                         continue
                     if not turn:
                         continue
+                    if turn["stype"] and turn["stype"] != "main":
+                        continue  # subagent/internal session — keep the feed clean
+                    if not state.get("project"):
+                        state["project"] = find_project(entry)
                     if DEBUG:
                         log(f"[{name}] line finish={turn['finish']} tools={turn['tools']} text={len(turn['text'])}ch")
                     if card is None or card.sealed:
                         reason = "no-card" if card is None else "prev-sealed"
                         card = LiveCard(name)
+                        card.project = state.get("project", "")
                         cards[name] = card
                         if DEBUG:
                             log(f"[{name}] create ({reason})")
@@ -451,6 +478,7 @@ def watch() -> None:
                         card.reasoning_turns += 1
                     card.tools_total += len(turn["tools"])
                     card.first_at = card.first_at or turn["at"]
+                    card.project = card.project or state.get("project", "")
                     card.meta = fry_meta_line(card, turn["model"], turn["at"])
                     body = render_body(turn, card.turns, state)
                     card.last_text = body
