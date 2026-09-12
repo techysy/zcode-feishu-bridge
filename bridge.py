@@ -324,7 +324,7 @@ def fry_meta_line(card, model: str, at: str) -> str:
         "reasoning": f"💭{card.reasoning_turns}",
         "tools": f"🔧{card.tools_total}",
         "context": f"{compact(card.ctx)}/{compact(CTX_TOTAL)} ({pct:.0f}%)" if card.ctx else "",
-        "tokens": f"🪙 {compact(card.out_total)}" if card.out_total else "",
+        "tokens": f"🎫 {compact(card.out_total)}" if card.out_total else "",
         "elapsed": f"⏱️ {elapsed}" if elapsed else "",
     }
     return " · ".join(table[f] for f in PANEL_FIELDS if table.get(f))
