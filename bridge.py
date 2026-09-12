@@ -42,6 +42,7 @@ STREAMING_ELEMENT_ID = "streaming_content"
 LOADING_ELEMENT_ID = "loading_icon"
 LOADING_IMG_KEY = "img_v3_02vb_496bec09-4b43-4773-ad6b-0cdd103cd2bg"  # from hermes-fry-cards
 CTX_TOTAL = int(os.environ.get("BRIDGE_CONTEXT_TOTAL") or 200_000)  # model context window
+DEBUG = os.environ.get("BRIDGE_DEBUG", "") not in ("", "0")  # model context window
 
 APP_ID = os.environ.get("FEISHU_APP_ID") or os.environ.get("LARK_APP_ID") or ""
 APP_SECRET = os.environ.get("FEISHU_APP_SECRET") or os.environ.get("LARK_APP_SECRET") or ""
@@ -399,9 +400,14 @@ def watch() -> None:
                         continue
                     if not turn:
                         continue
+                    if DEBUG:
+                        log(f"[{name}] line finish={turn['finish']} tools={turn['tools']} text={len(turn['text'])}ch")
                     if card is None or card.sealed:
+                        reason = "no-card" if card is None else "prev-sealed"
                         card = LiveCard(name)
                         cards[name] = card
+                        if DEBUG:
+                            log(f"[{name}] create ({reason})")
                         card.create("…", turn["model"])
                     card.turns += 1
                     u = turn["usage"]
