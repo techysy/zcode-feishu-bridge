@@ -46,6 +46,12 @@ CTX_TOTAL = int(os.environ.get("BRIDGE_CONTEXT_TOTAL") or 1_000_000)  # model co
 DEBUG = os.environ.get("BRIDGE_DEBUG", "") not in ("", "0")
 # stats-panel fields, order = display order (fry-cards footer.fields style)
 _PANEL_RAW = os.environ.get("BRIDGE_PANEL_FIELDS", "").strip()
+# project label aliases: "default=workspace,other=xx" — unify meaningless dir names
+PROJECT_ALIAS = dict(
+    kv.split("=", 1) for kv in
+    os.environ.get("BRIDGE_PROJECT_ALIAS", "default=workspace").split(",")
+    if "=" in kv
+)
 PANEL_FIELDS = [f.strip() for f in (_PANEL_RAW or "project,model,reasoning,tools,context,tokens,elapsed").split(",") if f.strip()]  # model context window
 
 APP_ID = os.environ.get("FEISHU_APP_ID") or os.environ.get("LARK_APP_ID") or ""
@@ -261,7 +267,7 @@ class LiveCard:
 # auxiliary model calls (compaction summaries, title generation, env-echo) sometimes
 # log boilerplate as response.text — never render it as card body
 _JUNK_RES = (
-    re.compile(r"^\s*-\s*Is a git repository"),   # env-context block echo
+    re.compile(r"^\s*-?\s*Is a git repository"),  # env-context block echo (dash optional)
     re.compile(r"^\s*<analysis>"),                  # conversation-compaction summary
     re.compile(r"^\s*\{.*\}\s*$", re.S),         # raw JSON payload (title gen etc.)
 )
@@ -358,7 +364,7 @@ def find_project(entry: dict) -> str:
                 if i >= 0:
                     seg = p[i + len(marker):].split("\\")[0]
                     if seg and not seg.endswith(":"):
-                        return seg
+                        return PROJECT_ALIAS.get(seg, seg)
     return ""
 
 

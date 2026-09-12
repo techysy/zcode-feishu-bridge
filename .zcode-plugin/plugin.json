@@ -1,6 +1,6 @@
 {
   "name": "zcode-feishu-bridge",
-  "description": "Mirror live ZCode sessions into Feishu streaming cards: tails ZCode rollout logs and renders per-turn progress (tools, reasoning, context usage, elapsed) as a CardKit typewriter card in a dedicated chat. Zero source patching, zero dependencies.",
+  "description": "Mirror live ZCode sessions into Feishu streaming cards: per-turn progress, project labels and a usage panel. Zero source patching, zero dependencies. 把 ZCode 会话实时镜像到飞书流式卡片：逐轮进度、项目标签、用量面板。不改 ZCode 源码、零依赖。",
   "description_i18n": {
     "en": "Mirror live ZCode sessions into Feishu streaming cards: tails ZCode rollout logs and renders per-turn progress (tools, reasoning, context usage, elapsed) as a CardKit typewriter card in a dedicated chat. Zero source patching, zero dependencies.",
     "zh-CN": "把 ZCode 会话实时镜像到飞书流式卡片：tail rollout 日志，逐轮更新综合面板（模型/推理/工具/上下文/耗时）到专属会话的打字机卡片。不改 ZCode 源码、零依赖。"
@@ -71,6 +71,12 @@
       "description": "Log every parsed rollout line to bridge.log. 在 bridge.log 记录每行解析日志，排障用。",
       "type": "boolean",
       "default": "false"
+    },
+    "project_alias": {
+      "title": "Project alias / 项目别名",
+      "description": "Rename project labels, comma separated k=v pairs. e.g. default=workspace. 项目标签重命名，逗号分隔 k=v，如 default=workspace",
+      "type": "string",
+      "default": "default=workspace"
     }
   }
 }

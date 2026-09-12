@@ -1,6 +1,6 @@
 ---
 name: feishu-bridge
-description: Operate the feishu-bridge daemon that mirrors live ZCode sessions into Feishu streaming cards. Use when the user asks to 启动/停止/查看 feishu-bridge, 飞书直播/镜像 ZCode 进度, or reports bridge cards missing/duplicated/wrong.
+description: Operate the feishu-bridge daemon that mirrors live ZCode sessions into Feishu streaming cards. Use when the user asks to 启动/停止/查看 feishu-bridge, 飞书直播/镜像/同步 ZCode 进度, 发卡片到飞书群, or reports bridge cards missing/duplicated/wrong. Operate the daemon tailing ZCode rollout logs into Feishu CardKit streaming cards.
 ---
 
 # feishu-bridge operation

@@ -46,6 +46,7 @@ const childEnv = {
   BRIDGE_PANEL_FIELDS: process.env.BRIDGE_PANEL_FIELDS || process.env.ZCODE_USER_CONFIG_PANEL_FIELDS || "",
   ROLLOUT_DIR: process.env.ROLLOUT_DIR || process.env.ZCODE_USER_CONFIG_ROLLOUT_DIR || "",
   BRIDGE_DEBUG: process.env.BRIDGE_DEBUG || (process.env.ZCODE_USER_CONFIG_DEBUG || ""),
+    BRIDGE_PROJECT_ALIAS: process.env.BRIDGE_PROJECT_ALIAS || process.env.ZCODE_USER_CONFIG_PROJECT_ALIAS || "",
 };
 let child = spawn(python, ["bridge.py"], {
   cwd: root, detached: true, stdio: "ignore", windowsHide: true, env: childEnv,
