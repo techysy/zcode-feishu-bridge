@@ -272,6 +272,8 @@ _JUNK_RES = (
     re.compile(r"^\s*\{.*\}\s*$", re.S),         # raw JSON payload (title gen etc.)
 )
 
+_ENV_SIGNATURES = ("Is a git repository", "Platform:", "Shell: Git", "OS Version:", "You are powered by")
+
 
 def is_junk_text(t: str) -> bool:
     head = t[:400]
@@ -279,7 +281,8 @@ def is_junk_text(t: str) -> bool:
         return False
     if any(p.match(t) for p in _JUNK_RES):
         return True
-    return "Is a git repository" in head and "You are powered by" in head
+    # env-context block, any format: >=2 signatures in the head
+    return sum(s in head for s in _ENV_SIGNATURES) >= 2
 
 
 def local_hhmmss(iso_utc: str) -> str:
@@ -353,18 +356,29 @@ def fry_meta_line(card, model: str, at: str) -> str:
     return " · ".join(table[f] for f in PANEL_FIELDS if table.get(f))
 
 
+def _message_texts(m: dict):
+    """Yield searchable text from a message (string content or multipart text parts)."""
+    c = m.get("content")
+    if isinstance(c, str):
+        yield c
+    elif isinstance(c, list):
+        for part in c:
+            if isinstance(part, dict) and isinstance(part.get("text"), str):
+                yield part["text"]
+
+
 def find_project(entry: dict) -> str:
     """Best-effort project label: first sensible dir under GitHub Files\\ or workspace\\."""
     for m in ((entry.get("request") or {}).get("messages") or [])[:4]:
-        c = str(m.get("content"))
-        for match in re.findall(r"[A-Za-z]:\\[^\"]+", c)[:20]:
-            p = match.replace("/", "\\")
-            for marker in ("GitHub Files\\", "workspace\\"):
-                i = p.rfind(marker)
-                if i >= 0:
-                    seg = p[i + len(marker):].split("\\")[0]
-                    if seg and not seg.endswith(":"):
-                        return PROJECT_ALIAS.get(seg, seg)
+        for c in _message_texts(m):
+            for match in re.findall(r"[A-Za-z]:\\[^\"\\\r\n]+", c)[:20]:
+                p = match.replace("/", "\\")
+                for marker in ("GitHub Files\\", "workspace\\"):
+                    i = p.rfind(marker)
+                    if i >= 0:
+                        seg = p[i + len(marker):].split("\\")[0]
+                        if seg and not seg.endswith(":"):
+                            return PROJECT_ALIAS.get(seg, seg)
     return ""
 
 
