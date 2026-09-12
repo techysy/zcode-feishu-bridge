@@ -27,6 +27,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 
 BASE_URL = (os.environ.get("FEISHU_BASE_URL") or "https://open.feishu.cn").rstrip("/")
@@ -160,6 +161,8 @@ class LiveCard:
         self.last_text = ""
         self.meta = ""
         self.sequence = 0         # cardkit mutations need a monotonic sequence
+        self.ctx = 0              # last turn's inputTokens ≈ current context size
+        self.out_total = 0        # cumulative outputTokens across turns
 
     def _next_seq(self) -> int:
         self.sequence += 1
@@ -233,6 +236,21 @@ class LiveCard:
 
 # ── rollout parsing ─────────────────────────────────────────────────────────
 
+def local_hhmmss(iso_utc: str) -> str:
+    """'2026-09-12T05:47:09.386Z' -> '13:47:09' in the machine's local timezone."""
+    try:
+        dt = datetime.fromisoformat(str(iso_utc).replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone().strftime("%H:%M:%S")
+    except ValueError:
+        return str(iso_utc)[11:19]
+
+
+def compact(n: int) -> str:
+    return f"{n/1000:.1f}k" if n >= 1000 else str(n)
+
+
 def extract(entry: dict) -> dict | None:
     """Return turn info from one model_io line, or None if not usable."""
     if entry.get("type") not in (None, "model_io"):
@@ -246,6 +264,7 @@ def extract(entry: dict) -> dict | None:
         "model": (entry.get("model") or {}).get("modelId", ""),
         "duration": entry.get("durationMs"),
         "at": entry.get("completedAt", ""),
+        "usage": resp.get("usage") or {},
     }
 
 
@@ -344,8 +363,15 @@ def watch() -> None:
                         cards[name] = card
                         card.create("…", turn["model"])
                     card.turns += 1
-                    card.meta = (f"{turn['model'].split('/')[-1]} · {card.turns} 轮 · 最后活动 "
-                                 + turn["at"][11:19].replace("T", " "))
+                    u = turn["usage"]
+                    card.ctx = int(u.get("inputTokens") or 0) or card.ctx
+                    card.out_total += int(u.get("outputTokens") or 0)
+                    meta = f"{turn['model'].split('/')[-1]} · {card.turns} 轮"
+                    if card.ctx:
+                        meta += f" · 上下文 {compact(card.ctx)}"
+                    if card.out_total:
+                        meta += f" · 输出累计 {compact(card.out_total)}"
+                    card.meta = meta + f" · 最后活动 {local_hhmmss(turn['at'])}"
                     body = render_body(turn, card.turns, state)
                     card.last_text = body
                     if turn["finish"] == "stop":
