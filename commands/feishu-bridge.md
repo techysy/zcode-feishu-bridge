@@ -1,5 +1,5 @@
 ---
-description: Start/stop/check the feishu-bridge daemon. 启动/停止/查看 feishu-bridge 守护进程（ZCode 会话 → 飞书流式卡片）
+description: 启动/停止/查看 feishu-bridge 守护进程（ZCode 会话 → 飞书流式卡片）。Start/stop/check the feishu-bridge daemon.
 argument-hint: "[start|stop|status]"
 ---
 

@@ -7,7 +7,7 @@
     {
       "name": "zcode-feishu-bridge",
       "source": ".",
-      "description": "Mirror live ZCode sessions into Feishu streaming cards (CardKit typewriter, per-turn stats panel).",
+      "description": "把 ZCode 会话实时镜像到飞书流式卡片。Mirror live ZCode sessions into Feishu streaming cards.",
       "version": "1.0.0"
     }
   ]
