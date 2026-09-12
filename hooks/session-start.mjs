@@ -20,7 +20,7 @@ const enabled = /^(1|true|yes)$/i.test(
 if (!enabled) process.exit(0);
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-const pidfile = fileURLToPath(new URL("./bridge.pid", import.meta.url));
+const pidfile = fileURLToPath(new URL("../bridge.pid", import.meta.url)); // bridge.py writes at plugin root
 
 // liveness: pidfile present and the pid responds to signal 0
 if (existsSync(pidfile)) {
