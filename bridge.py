@@ -43,7 +43,11 @@ PANEL_ELEMENT_ID = "panel_meta"          # fry-cards 综合面板统计行
 LOADING_ELEMENT_ID = "loading_icon"
 LOADING_IMG_KEY = "img_v3_02vb_496bec09-4b43-4773-ad6b-0cdd103cd2bg"  # from hermes-fry-cards
 CTX_TOTAL = int(os.environ.get("BRIDGE_CONTEXT_TOTAL") or 1_000_000)  # model context window
-DEBUG = os.environ.get("BRIDGE_DEBUG", "") not in ("", "0")  # model context window
+DEBUG = os.environ.get("BRIDGE_DEBUG", "") not in ("", "0")
+# stats-panel fields, order = display order (fry-cards footer.fields style)
+PANEL_FIELDS = [f.strip() for f in os.environ.get(
+    "BRIDGE_PANEL_FIELDS",
+    "project,model,reasoning,tools,context,tokens,elapsed").split(",") if f.strip()]  # model context window
 
 APP_ID = os.environ.get("FEISHU_APP_ID") or os.environ.get("LARK_APP_ID") or ""
 APP_SECRET = os.environ.get("FEISHU_APP_SECRET") or os.environ.get("LARK_APP_SECRET") or ""
@@ -306,20 +310,24 @@ def fmt_elapsed(seconds: float) -> str:
 
 def fry_meta_line(card, model: str, at: str) -> str:
     """'[📦 proj ·] 🍟 glm-5.3-flash · 💭0 · 🔧22 · 243.7k/1.0m (24%) · ⏱️ 18m 42s'."""
-    parts = []
-    if getattr(card, "project", ""):
-        parts.append(f"📦 {card.project}")
-    parts += [model.split('/')[-1], f"💭{card.reasoning_turns}", f"🔧{card.tools_total}"]
-    if card.ctx:
-        pct = min(card.ctx / CTX_TOTAL * 100, 100)
-        parts.append(f"{compact(card.ctx)}/{compact(CTX_TOTAL)} ({pct:.0f}%)")
+    pct = min(card.ctx / CTX_TOTAL * 100, 100) if card.ctx else 0
+    elapsed = ""
     try:
         t0 = datetime.fromisoformat(str(card.first_at).replace("Z", "+00:00"))
         t1 = datetime.fromisoformat(str(at).replace("Z", "+00:00"))
-        parts.append(f"⏱️ {fmt_elapsed(abs((t1 - t0).total_seconds()))}")
+        elapsed = fmt_elapsed(abs((t1 - t0).total_seconds()))
     except (ValueError, TypeError):
         pass
-    return " · ".join(parts)
+    table = {
+        "project": f"📦 {card.project}" if getattr(card, "project", "") else "",
+        "model": model.split("/")[-1],
+        "reasoning": f"💭{card.reasoning_turns}",
+        "tools": f"🔧{card.tools_total}",
+        "context": f"{compact(card.ctx)}/{compact(CTX_TOTAL)} ({pct:.0f}%)" if card.ctx else "",
+        "tokens": f"🪙 {compact(card.out_total)}" if card.out_total else "",
+        "elapsed": f"⏱️ {elapsed}" if elapsed else "",
+    }
+    return " · ".join(table[f] for f in PANEL_FIELDS if table.get(f))
 
 
 def find_project(entry: dict) -> str:

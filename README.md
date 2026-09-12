@@ -82,6 +82,7 @@ python bridge.py                   # 前台运行；--probe 离线预览解析�
 | `context_total` / `BRIDGE_CONTEXT_TOTAL` | 模型上下文窗口，面板百分比用；默认 `1000000`（1M） |
 | — / `FEISHU_BASE_URL` | 默认 `https://open.feishu.cn`，Lark 国际版改 `https://open.larksuite.com` |
 | `auto_start` | 会话启动时自动拉起 daemon（`bridge.pid` 幂等，不会重复启动） |
+| `panel_fields` / `BRIDGE_PANEL_FIELDS` | 综合面板字段与顺序（fry-cards footer.fields 风格），可选值 `project, model, reasoning, tools, context, tokens, elapsed`；默认全部 |
 | — / `ROLLOUT_DIR` | rollout 目录，默认 `~/.zcode/cli/rollout` |
 | — / `BRIDGE_DEBUG` | `1` = 每行解析日志（排障用） |
 

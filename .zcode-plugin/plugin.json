@@ -35,6 +35,12 @@
       "description": "Start the bridge daemon automatically on session start (requires Feishu credentials in environment).",
       "type": "boolean",
       "default": "false"
+    },
+    "panel_fields": {
+      "title": "Panel fields",
+      "description": "Stats-panel fields and order, comma separated. Available: project, model, reasoning, tools, context, tokens, elapsed. Default: project,model,reasoning,tools,context,tokens,elapsed",
+      "type": "string",
+      "default": "project,model,reasoning,tools,context,tokens,elapsed"
     }
   }
 }

@@ -42,6 +42,7 @@ const child = spawn(python, ["bridge.py"], {
     ...process.env,
     FEISHU_NOTIFY_CHAT_ID: process.env.ZCODE_USER_CONFIG_NOTIFY_CHAT_ID || "",
     BRIDGE_CONTEXT_TOTAL: process.env.ZCODE_USER_CONFIG_CONTEXT_TOTAL || "1000000",
+    BRIDGE_PANEL_FIELDS: process.env.ZCODE_USER_CONFIG_PANEL_FIELDS || "",
   },
 });
 child.unref();
