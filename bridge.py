@@ -433,6 +433,21 @@ def watch() -> None:
                 if name not in offsets:
                     offsets[name] = size        # start at EOF: no history replay
                     last_mtime[name] = size
+                    state0 = states.setdefault(name, {})
+                    if not state0.get("project"):
+                        try:  # already-running session: mine its head for the project label
+                            with open(p, encoding="utf-8", errors="replace") as fh:
+                                for _ in range(6):
+                                    l0 = fh.readline()
+                                    if not l0:
+                                        break
+                                    e0 = extract(json.loads(l0))
+                                    raw0 = json.loads(l0)
+                                    state0["project"] = find_project(raw0)
+                                    if state0["project"]:
+                                        break
+                        except (ValueError, OSError):
+                            pass
                     continue
                 if size <= offsets[name]:
                     if size < offsets[name]:    # truncated/rotated
