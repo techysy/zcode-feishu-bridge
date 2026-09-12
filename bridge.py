@@ -259,6 +259,24 @@ class LiveCard:
 
 # ── rollout parsing ─────────────────────────────────────────────────────────
 
+# auxiliary model calls (compaction summaries, title generation, env-echo) sometimes
+# log boilerplate as response.text — never render it as card body
+_JUNK_RES = (
+    re.compile(r"^\s*-\s*Is a git repository"),   # env-context block echo
+    re.compile(r"^\s*<analysis>"),                  # conversation-compaction summary
+    re.compile(r"^\s*\{.*\}\s*$", re.S),         # raw JSON payload (title gen etc.)
+)
+
+
+def is_junk_text(t: str) -> bool:
+    head = t[:400]
+    if not t.strip():
+        return False
+    if any(p.match(t) for p in _JUNK_RES):
+        return True
+    return "Is a git repository" in head and "You are powered by" in head
+
+
 def local_hhmmss(iso_utc: str) -> str:
     """'2026-09-12T05:47:09.386Z' -> '13:47:09' in the machine's local timezone."""
     try:
@@ -350,8 +368,11 @@ def extract(entry: dict) -> dict | None:
     if entry.get("type") not in (None, "model_io"):
         return None
     resp = entry.get("response") or {}
+    text = (resp.get("text") or "").strip()
+    if is_junk_text(text):
+        text = ""
     return {
-        "text": (resp.get("text") or "").strip(),
+        "text": text,
         "reasoning": (resp.get("reasoningText") or "").strip(),
         "tools": [t.get("name") for t in (resp.get("toolCalls") or []) if t.get("name")],
         "finish": resp.get("finishReason"),
