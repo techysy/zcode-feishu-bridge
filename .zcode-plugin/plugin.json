@@ -42,6 +42,12 @@
       "type": "string",
       "default": ""
     },
+    "notify_open_id": {
+      "title": "通知用户 open id / Notify user open id",
+      "description": "单聊直达用户（ou_ 开头），与 notify_chat_id 二选一，chat id 优先。DM the user directly (ou_xxx); alternative to notify_chat_id which takes precedence.",
+      "type": "string",
+      "default": ""
+    },
     "rollout_dir": {
       "title": "rollout 目录 / Rollout directory",
       "description": "ZCode 日志目录，默认 ~/.zcode/cli/rollout。ZCode rollout log directory.",
@@ -60,6 +66,12 @@
       "type": "string",
       "default": "project,model,reasoning,tools,context,tokens,elapsed"
     },
+    "project_alias": {
+      "title": "项目别名 / Project alias",
+      "description": "项目标签重命名，逗号分隔 k=v，如 default=workspace。Rename project labels, comma separated k=v pairs.",
+      "type": "string",
+      "default": "default=workspace"
+    },
     "auto_start": {
       "title": "自动启动 / Auto start",
       "description": "会话启动时自动拉起桥接（需已配置凭据）。Start the bridge daemon automatically on session start.",
@@ -71,12 +83,6 @@
       "description": "在 bridge.log 记录每行解析日志，排障用。Log every parsed rollout line to bridge.log.",
       "type": "boolean",
       "default": "false"
-    },
-    "project_alias": {
-      "title": "项目别名 / Project alias",
-      "description": "项目标签重命名，逗号分隔 k=v，如 default=workspace。Rename project labels, comma separated k=v pairs.",
-      "type": "string",
-      "default": "default=workspace"
     }
   }
 }

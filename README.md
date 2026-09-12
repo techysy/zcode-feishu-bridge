@@ -82,6 +82,7 @@ hook 启动 daemon 时会把 userConfig 注入为环境变量，真实环境变�
 |---|---|
 | `app_id` + `app_secret` / `FEISHU_APP_ID` + `FEISHU_APP_SECRET` | 飞书应用凭据（必需；或 LARK_* 兼容） |
 | `notify_chat_id` / `FEISHU_NOTIFY_CHAT_ID` | 目标会话（`oc_xxx`）。**建议用专属群**做工作实况 feed，与官方回复通道分开 |
+| `notify_open_id` / `FEISHU_NOTIFY_OPEN_ID` | 单聊直达用户（`ou_xxx`），与 notify_chat_id 二选一，chat id 优先 |
 | `base_url` / `FEISHU_BASE_URL` | 默认 `https://open.feishu.cn`，Lark 国际版改 `https://open.larksuite.com` |
 | `context_total` / `BRIDGE_CONTEXT_TOTAL` | 模型上下文窗口，面板百分比用；默认 `1000000`（1M） |
 | `panel_fields` / `BRIDGE_PANEL_FIELDS` | 综合面板字段与顺序（fry-cards footer.fields 风格），可选值 `project, model, reasoning, tools, context, tokens, elapsed`；默认全部 |

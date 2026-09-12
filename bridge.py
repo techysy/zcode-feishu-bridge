@@ -57,6 +57,7 @@ PANEL_FIELDS = [f.strip() for f in (_PANEL_RAW or "project,model,reasoning,tools
 APP_ID = os.environ.get("FEISHU_APP_ID") or os.environ.get("LARK_APP_ID") or ""
 APP_SECRET = os.environ.get("FEISHU_APP_SECRET") or os.environ.get("LARK_APP_SECRET") or ""
 CHAT_ID = os.environ.get("FEISHU_NOTIFY_CHAT_ID") or os.environ.get("FEISHU_CARD_CHAT_ID") or ""
+OPEN_ID = os.environ.get("FEISHU_NOTIFY_OPEN_ID", "")  # ou_xxx: DM the user directly
 
 _LOG_FILE = Path(os.environ.get("BRIDGE_LOG") or (Path(__file__).parent / "bridge.log"))
 
@@ -79,7 +80,7 @@ _token: dict = {"value": "", "expire_at": 0.0}
 
 def get_token() -> str:
     if not APP_ID or not APP_SECRET:
-        sys.exit("missing FEISHU_APP_ID / FEISHU_APP_SECRET env vars")
+        raise RuntimeError("missing FEISHU_APP_ID / FEISHU_APP_SECRET env vars")
     now = time.time()
     if _token["value"] and now < _token["expire_at"]:
         return _token["value"]
@@ -113,6 +114,18 @@ def call_api(method: str, path: str, body: dict | None = None) -> dict:
             return json.loads(raw)
         except ValueError:
             return {"code": e.code, "msg": raw[:300]}
+
+
+def notify_target(explicit_chat: str = "") -> tuple[str, str]:
+    """(receive_id, receive_id_type) — explicit chat > default chat > open_id."""
+    chat = explicit_chat or CHAT_ID
+    if chat:
+        return chat, "chat_id"
+    if OPEN_ID:
+        return OPEN_ID, "open_id"
+    raise RuntimeError(
+        "no notify target: set notify_chat_id (oc_xxx) or notify_open_id (ou_xxx) / FEISHU_NOTIFY_CHAT_ID"
+    )
 
 
 # ── card shapes (mirroring hermes-fry-cards cardkit streaming card) ─────────
@@ -209,8 +222,9 @@ class LiveCard:
             log(f"[cardkit unavailable: {r.get('code')} {r.get('msg')}] falling back to message PATCH")
             self.mode = "patch"
             content = card
-        send = call_api("POST", "/im/v1/messages?receive_id_type=chat_id",
-                        {"receive_id": CHAT_ID, "msg_type": "interactive",
+        target, id_type = notify_target(chatId)
+        send = call_api("POST", f"/im/v1/messages?receive_id_type={id_type}",
+                        {"receive_id": target, "msg_type": "interactive",
                          "content": json.dumps(content, ensure_ascii=False)})
         if send.get("code") != 0:
             log(f"send card failed: {send.get('code')} {send.get('msg')}")
@@ -429,9 +443,9 @@ def render_body(turn: dict, turns: int, state: dict) -> str:
 # ── main loop ───────────────────────────────────────────────────────────────
 
 def watch() -> None:
-    if not CHAT_ID:
-        sys.exit("missing FEISHU_NOTIFY_CHAT_ID env var (target chat for the live card)")
-    log(f"watching {ROLLOUT_DIR} -> chat {CHAT_ID[:14]}…")
+    if not CHAT_ID and not OPEN_ID:
+        sys.exit("missing notify target: set FEISHU_NOTIFY_CHAT_ID (oc_xxx) or FEISHU_NOTIFY_OPEN_ID (ou_xxx)")
+    log(f"watching {ROLLOUT_DIR} -> {(CHAT_ID or OPEN_ID)[:14]}…")
     offsets: dict[str, int] = {}       # file -> consumed bytes (start at EOF)
     states: dict[str, dict] = {}       # file -> {"last_body": str}
     cards: dict[str, LiveCard] = {}    # file -> live card
@@ -545,6 +559,10 @@ def watch() -> None:
         except Exception as exc:  # keep the daemon alive no matter what
             import traceback
             log(f"watch loop error: {exc!r}\n{traceback.format_exc()}")
+        try:  # heartbeat for the SessionStart hook's hung-daemon recovery
+            (_LOG_FILE.parent / "bridge.heartbeat").write_text(str(time.time()), encoding="utf-8")
+        except OSError:
+            pass
         time.sleep(POLL_SEC)
 
 
@@ -574,6 +592,10 @@ def main() -> None:
         pass
     try:
         watch()
+    except Exception:
+        import traceback
+        log("fatal: daemon crashed\n" + traceback.format_exc())
+        raise
     finally:
         try:
             pidfile.unlink()
