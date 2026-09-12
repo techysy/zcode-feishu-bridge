@@ -19,56 +19,56 @@
   ],
   "userConfig": {
     "app_id": {
-      "title": "Feishu App ID",
-      "description": "Feishu app credentials (cli_xxx). Leave empty to use environment variables FEISHU_APP_ID/FEISHU_APP_SECRET.",
+      "title": "Feishu App ID / 飞书 App ID",
+      "description": "Feishu app credential (cli_xxx). Empty = use environment variable FEISHU_APP_ID. 飞书应用凭据，留空则读环境变量 FEISHU_APP_ID。",
       "type": "string",
       "default": ""
     },
     "app_secret": {
-      "title": "Feishu App Secret",
-      "description": "Feishu app secret. Stored locally in ZCode config, never committed.",
+      "title": "Feishu App Secret / 飞书 App Secret",
+      "description": "Feishu app secret; stored locally in ZCode config, never committed. 飞书应用密钥，仅存本地配置，不会入库。",
       "type": "string",
       "default": ""
     },
     "base_url": {
-      "title": "Feishu base URL",
-      "description": "https://open.feishu.cn (default) or https://open.larksuite.com for Lark.",
+      "title": "Feishu base URL / 飞书域名",
+      "description": "https://open.feishu.cn (default) or https://open.larksuite.com for Lark. 默认飞书国内域名，Lark 国际版填 https://open.larksuite.com。",
       "type": "string",
       "default": ""
     },
     "notify_chat_id": {
-      "title": "Feishu chat id",
-      "description": "Target chat (oc_xxx) that receives the live cards. The app bot must be in that chat. Recommended: a dedicated group used as the work-log feed.",
+      "title": "Notify chat id / 接收卡片会话",
+      "description": "Target chat (oc_xxx) for live cards; the app bot must be in it — a dedicated group is recommended. 接收实时卡片的会话，机器人须已加入；建议用专属群。",
       "type": "string",
       "default": ""
     },
     "rollout_dir": {
-      "title": "Rollout directory",
-      "description": "ZCode rollout log directory. Default: ~/.zcode/cli/rollout",
+      "title": "Rollout directory / rollout 目录",
+      "description": "ZCode rollout log directory. Default: ~/.zcode/cli/rollout. ZCode 日志目录，默认 ~/.zcode/cli/rollout。",
       "type": "string",
       "default": ""
     },
     "context_total": {
-      "title": "Context window",
-      "description": "Model context window used by the usage panel, e.g. 1000000 for 1M. Default 1000000.",
+      "title": "Context window / 上下文窗口",
+      "description": "Model context window for the usage panel, e.g. 1000000 for 1M. 面板百分比用的上下文窗口大小，默认 1000000。",
       "type": "string",
       "default": "1000000"
     },
     "panel_fields": {
-      "title": "Panel fields",
-      "description": "Stats-panel fields and order, comma separated. Available: project, model, reasoning, tools, context, tokens, elapsed. Default: project,model,reasoning,tools,context,tokens,elapsed",
+      "title": "Panel fields / 面板字段",
+      "description": "Stats-panel fields and order: project, model, reasoning, tools, context, tokens, elapsed. 综合面板字段与顺序，逗号分隔，默认全部。",
       "type": "string",
       "default": "project,model,reasoning,tools,context,tokens,elapsed"
     },
     "auto_start": {
-      "title": "Auto start bridge",
-      "description": "Start the bridge daemon automatically on session start (requires Feishu credentials in environment).",
+      "title": "Auto start / 自动启动",
+      "description": "Start the bridge daemon automatically on session start (needs Feishu credentials). 会话启动时自动拉起桥接（需已配置凭据）。",
       "type": "boolean",
       "default": "false"
     },
     "debug": {
-      "title": "Debug logging",
-      "description": "Log every parsed rollout line to bridge.log (troubleshooting).",
+      "title": "Debug logging / 调试日志",
+      "description": "Log every parsed rollout line to bridge.log. 在 bridge.log 记录每行解析日志，排障用。",
       "type": "boolean",
       "default": "false"
     }
