@@ -1,0 +1,40 @@
+{
+  "name": "zcode-feishu-bridge",
+  "description": "Mirror live ZCode sessions into Feishu streaming cards: tails ZCode rollout logs and renders per-turn progress (tools, reasoning, context usage, elapsed) as a CardKit typewriter card in a dedicated chat. Zero source patching, zero dependencies.",
+  "description_i18n": {
+    "en": "Mirror live ZCode sessions into Feishu streaming cards: tails ZCode rollout logs and renders per-turn progress (tools, reasoning, context usage, elapsed) as a CardKit typewriter card in a dedicated chat. Zero source patching, zero dependencies.",
+    "zh-CN": "把 ZCode 会话实时镜像到飞书流式卡片：tail rollout 日志，逐轮更新综合面板（模型/推理/工具/上下文/耗时）到专属会话的打字机卡片。不改 ZCode 源码、零依赖。"
+  },
+  "version": "0.1.0",
+  "author": {
+    "name": "techysy"
+  },
+  "keywords": [
+    "feishu",
+    "lark",
+    "zcode",
+    "streaming-card",
+    "bridge",
+    "notification"
+  ],
+  "userConfig": {
+    "notify_chat_id": {
+      "title": "Feishu chat id",
+      "description": "Target chat (oc_xxx) that receives the live cards. The app bot must be in that chat. Recommended: a dedicated group used as the work-log feed.",
+      "type": "string",
+      "default": ""
+    },
+    "context_total": {
+      "title": "Context window",
+      "description": "Model context window used by the usage panel, e.g. 1000000 for 1M. Default 1000000.",
+      "type": "string",
+      "default": "1000000"
+    },
+    "auto_start": {
+      "title": "Auto start bridge",
+      "description": "Start the bridge daemon automatically on session start (requires Feishu credentials in environment).",
+      "type": "boolean",
+      "default": "false"
+    }
+  }
+}

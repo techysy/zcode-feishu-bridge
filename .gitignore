@@ -1,3 +1,5 @@
 bridge.log
+bridge.pid
 .tmp*/
 __pycache__/
+.env

@@ -1,0 +1,21 @@
+{
+  "description": "feishu-bridge: optionally auto-start the bridge daemon when a session starts (userConfig auto_start).",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear|compact",
+        "hooks": [
+          {
+            "type": "process",
+            "command": "node",
+            "args": [
+              "${ZCODE_PLUGIN_ROOT}/hooks/session-start.mjs"
+            ],
+            "timeoutMs": 8000,
+            "statusMessage": "feishu-bridge: ensuring daemon…"
+          }
+        ]
+      }
+    ]
+  }
+}

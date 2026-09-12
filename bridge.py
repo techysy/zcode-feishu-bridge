@@ -519,7 +519,18 @@ def main() -> None:
         sys.stderr.reconfigure(encoding="utf-8")
     except Exception:
         pass
-    watch()
+    pidfile = _LOG_FILE.parent / "bridge.pid"
+    try:
+        pidfile.write_text(str(os.getpid()), encoding="utf-8")
+    except OSError:
+        pass
+    try:
+        watch()
+    finally:
+        try:
+            pidfile.unlink()
+        except OSError:
+            pass
 
 
 if __name__ == "__main__":

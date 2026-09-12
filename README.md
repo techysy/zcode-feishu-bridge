@@ -31,6 +31,14 @@ ZCode 会话（每个任务）
 
 应用需要权限：`im:message`（发消息）+ `cardkit:card`（卡片读写，缺了会自动降级 PATCH 模式）。
 
+## 作为 ZCode 插件安装
+
+Settings → Plugin Management → Discover → `+` → 添加本仓库（Git URL `https://github.com/techysy/zcode-feishu-bridge` 或本地目录），然后：
+
+- 在插件设置里填 `notify_chat_id`（收卡片的群/单聊）、按需设 `context_total`；
+- 打开 `auto_start` 后，每次会话启动自动拉起 daemon（`bridge.pid` 幂等，不会重复启动）；
+- 也可以不装插件，直接 `python bridge.py` 手动跑。
+
 ## 使用
 
 ```bash
