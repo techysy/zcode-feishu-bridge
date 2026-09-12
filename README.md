@@ -2,6 +2,8 @@
 
 把 ZCode 的工作过程实时镜像到飞书：tail ZCode 的模型调用日志（`~/.zcode/cli/rollout/model-io-sess_*.jsonl`），每完成一轮模型调用就更新一张飞书流式卡片（CardKit 打字机效果）。**不修改 ZCode 任何代码**，天然免疫 ZCode 更新。
 
+> **定位**：过程实况 feed。ZCode 官方的飞书推送只投递最终回复（机器人气泡）；本桥接补的是任务进行中的逐轮进度，建议指向一个**专用群**，与官方回复互不干扰。
+
 ```
 ZCode 会话（每个任务）
   └─ rollout JSONL 逐轮落盘（response.text / reasoning / toolCalls / finishReason）
