@@ -108,8 +108,7 @@ def call_api(method: str, path: str, body: dict | None = None) -> dict:
 
 # ── card shapes (mirroring hermes-fry-cards cardkit streaming card) ─────────
 
-def streaming_card(text: str, title: str = "🔧 ZCode 工作中", template: str = "blue",
-                   panel: str = "⏱️ 0s") -> dict:
+def streaming_card(text: str, title: str = "🔧 ZCode 工作中", template: str = "blue") -> dict:
     return {
         "schema": "2.0",
         "config": {
@@ -128,12 +127,6 @@ def streaming_card(text: str, title: str = "🔧 ZCode 工作中", template: str
                 "tag": "markdown", "content": text, "text_align": "left",
                 "text_size": "normal_v2", "margin": "0px 0px 0px 0px",
                 "element_id": STREAMING_ELEMENT_ID,
-            },
-            # fry-cards 综合面板统计行（每轮更新）
-            {
-                "tag": "markdown", "content": panel, "text_align": "left",
-                "text_size": "notation", "margin": "0px 0px 0px 0px",
-                "element_id": PANEL_ELEMENT_ID,
             },
             # spinning loader (element shape borrowed from hermes-fry-cards)
             {
@@ -227,10 +220,6 @@ class LiveCard:
                          {"content": text, "sequence": self._next_seq()})
             if r.get("code") != 0:
                 log(f"element update failed: {r.get('code')} {r.get('msg')}")
-            r = call_api("PUT", f"/cardkit/v1/cards/{self.card_id}/elements/{PANEL_ELEMENT_ID}/content",
-                         {"content": meta, "sequence": self._next_seq()})
-            if r.get("code") != 0:
-                log(f"panel update failed: {r.get('code')} {r.get('msg')}")
         elif self.message_id:
             r = call_api("PATCH", f"/im/v1/messages/{self.message_id}",
                          {"content": json.dumps(streaming_card(text, panel=meta), ensure_ascii=False)})
