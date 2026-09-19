@@ -381,18 +381,39 @@ def _message_texts(m: dict):
                 yield part["text"]
 
 
+def _project_from_path(p: str) -> str:
+    p = p.strip().rstrip("\\")
+    for marker in ("GitHub Files\\", "workspace\\"):
+        i = p.rfind(marker)
+        if i >= 0:
+            seg = p[i + len(marker):].split("\\")[0]
+            if seg and not seg.endswith(":"):
+                return PROJECT_ALIAS.get(seg, seg)
+    seg = p.split("\\")[-1]  # no known root — use the dir's own name
+    if len(seg) > 1 and not seg.endswith(":"):
+        return PROJECT_ALIAS.get(seg, seg)
+    return ""
+
+
 def find_project(entry: dict) -> str:
-    """Best-effort project label: first sensible dir under GitHub Files\\ or workspace\\."""
-    for m in ((entry.get("request") or {}).get("messages") or [])[:4]:
+    """Project label: `- Primary working directory:` from the system prompt (authoritative,
+    present in every request), else mined from message texts."""
+    req = entry.get("request") or {}
+    for sys_field in (req.get("system"), (req.get("body") or {}).get("system")):
+        parts = sys_field if isinstance(sys_field, list) else [sys_field]
+        for part in parts:
+            c = part.get("text") if isinstance(part, dict) else part
+            if not isinstance(c, str):
+                continue
+            mwd = re.search(r"Primary working directory:\s*([^\r\n]+)", c)
+            if mwd:
+                return _project_from_path(mwd.group(1))
+    for m in (req.get("messages") or [])[:4]:
         for c in _message_texts(m):
             for match in re.findall(r"[A-Za-z]:\\[^\"\\\r\n]+", c)[:20]:
-                p = match.replace("/", "\\")
-                for marker in ("GitHub Files\\", "workspace\\"):
-                    i = p.rfind(marker)
-                    if i >= 0:
-                        seg = p[i + len(marker):].split("\\")[0]
-                        if seg and not seg.endswith(":"):
-                            return PROJECT_ALIAS.get(seg, seg)
+                label = _project_from_path(match.replace("/", "\\"))
+                if label:
+                    return label
     return ""
 
 
