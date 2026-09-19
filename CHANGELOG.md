@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.1] - 2026-09-20
+
+### 新增 / Added
+- **通知目标支持 open_id** — `notify_open_id`（`ou_xxx`）单聊直达用户，与 `notify_chat_id` 二选一（chat id 优先）
+- **综合面板可配置** — `panel_fields` 字段与顺序开关（fry-cards footer.fields 风格），新增 🎫 输出 token 用量
+- **项目别名** — `project_alias`（默认 `default=workspace`），统一无意义目录名
+- **全部配置收敛为键值对** — 凭据 / base_url / rollout_dir / debug 均入插件设置（hook 统一注入环境变量，真实 env 优先）
+- **三层自愈** — 心跳文件 + SessionStart hook 僵死检测（15 分钟无心跳杀树重启）；运行期错误记日志重试不再退出；崩溃留完整 traceback
+- **插件文案中英双语**（中文前置），覆盖全部 userConfig / 命令 / skill 描述
+
+### 修复 / Fixed
+- SessionStart hook 拉起 daemon **不再弹出控制台窗口**（pythonw + windowsHide）
+- hook pidfile 路径修正（原来指向 hooks/ 子目录导致幂等失效、重复拉起）
+- 📦 项目标签改读 system prompt 的 `Primary working directory`——会话压缩轮换后工作区名不再丢失
+- **摘要卡垃圾过滤**——环境块回显 / 压缩总结（`<analysis>`）/ 裸 JSON 等辅助调用文本不再作为卡片正文
+- `create()` 引用未定义 `chatId` 导致建卡失败；`BRIDGE_PANEL_FIELDS` 空串回落默认字段
+
+[1.0.1]: https://github.com/techysy/zcode-feishu-bridge/releases/tag/v1.0.1
+
+---
+
 ## [1.0.0] - 2026-09-12
 
 首个公开版本。

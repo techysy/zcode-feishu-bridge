@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![ZCode](https://img.shields.io/badge/ZCode-%E2%89%A53.11-2463eb)](https://github.com/zai-org/ZCode)
 [![Python](https://img.shields.io/badge/Python-%E2%89%A53.10-blue)](https://www.python.org/)
-[![当前版本](https://img.shields.io/badge/Release-v1.0.0-2463eb?logo=github&logoColor=white)](https://github.com/techysy/zcode-feishu-bridge/releases)
+[![当前版本](https://img.shields.io/badge/Release-v1.0.1-2463eb?logo=github&logoColor=white)](https://github.com/techysy/zcode-feishu-bridge/releases)
 
 > 🌉 把 ZCode 会话实时镜像到飞书流式卡片 — tail rollout 日志，不改 ZCode 一行代码
 
