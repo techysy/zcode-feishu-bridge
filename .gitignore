@@ -3,3 +3,5 @@ bridge.pid
 .tmp*/
 __pycache__/
 .env
+bridge.heartbeat
+*.ps1.tmp
