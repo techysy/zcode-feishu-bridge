@@ -222,7 +222,7 @@ class LiveCard:
             log(f"[cardkit unavailable: {r.get('code')} {r.get('msg')}] falling back to message PATCH")
             self.mode = "patch"
             content = card
-        target, id_type = notify_target(chatId)
+        target, id_type = notify_target()
         send = call_api("POST", f"/im/v1/messages?receive_id_type={id_type}",
                         {"receive_id": target, "msg_type": "interactive",
                          "content": json.dumps(content, ensure_ascii=False)})
@@ -517,7 +517,8 @@ def watch() -> None:
                     if not line:
                         continue
                     try:
-                        turn = extract(json.loads(line))
+                        raw = json.loads(line)
+                        turn = extract(raw)
                     except ValueError:
                         continue
                     if not turn:
@@ -525,7 +526,7 @@ def watch() -> None:
                     if turn["stype"] and turn["stype"] != "main":
                         continue  # subagent/internal session — keep the feed clean
                     if not state.get("project"):
-                        state["project"] = find_project(entry)
+                        state["project"] = find_project(raw)
                     if DEBUG:
                         log(f"[{name}] line finish={turn['finish']} tools={turn['tools']} text={len(turn['text'])}ch")
                     if card is None or card.sealed:

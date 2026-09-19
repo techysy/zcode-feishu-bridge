@@ -33,7 +33,7 @@ if (existsSync(pidfile)) {
   } catch { /* stale pidfile — fall through and start */ }
   if (alive) {
     try {
-      const ageMin = (Date.now() - fs.statSync(heartbeat).mtimeMs) / 60000;
+      const ageMin = (Date.now() - statSync(heartbeat).mtimeMs) / 60000;
       if (ageMin < 15) process.exit(0); // alive and healthy
       // hung: heartbeat stale — kill the tree and respawn below
       const { execSync } = await import("node:child_process");
