@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.0.1] - 2026-09-20
+## [1.1.0] - 2026-09-20
 
 ### 新增 / Added
 - **通知目标支持 open_id** — `notify_open_id`（`ou_xxx`）单聊直达用户，与 `notify_chat_id` 二选一（chat id 优先）
@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **摘要卡垃圾过滤**——环境块回显 / 压缩总结（`<analysis>`）/ 裸 JSON 等辅助调用文本不再作为卡片正文
 - `create()` 引用未定义 `chatId` 导致建卡失败；`BRIDGE_PANEL_FIELDS` 空串回落默认字段
 
-[1.0.1]: https://github.com/techysy/zcode-feishu-bridge/releases/tag/v1.0.1
+[1.1.0]: https://github.com/techysy/zcode-feishu-bridge/releases/tag/v1.1.0
 
 ---
 
