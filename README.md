@@ -24,6 +24,10 @@ flowchart LR
     C -- "stop 或<br/>5 分钟无活动" --> D["封卡<br/>绿头 · 项目<br/>综合面板"]
     B -. 心跳 .-> H["启动 hook<br/>自动拉起<br/>僵死重启"]
     H -. 拉起 .-> B
+    PAD["&nbsp;<br/>&nbsp;"]
+    B ~~~ PAD
+
+    style PAD fill:transparent,stroke:none,color:transparent
 ```
 
 ZCode 每完成一次模型调用，就往 `~/.zcode/cli/rollout/model-io-sess_<会话>.jsonl` 追加一行 `model_io` 记录。`bridge.py` 是一个常驻守护进程，每秒轮询这个目录，从各文件的**末尾**开始读新增行，解析出：
