@@ -16,19 +16,14 @@
 
 ## 工作原理
 
-```mermaid
-flowchart LR
-    Z["ZCode 会话<br/>每轮模型调用<br/>追加一行"] --> R[("rollout 日志<br/>model-io-sess_<br/>*.jsonl")]
-    R --> B["bridge.py<br/>每秒轮询<br/>只读新增行<br/>过滤子代理<br/>过滤杂项"]
-    B --> C["进行中卡片<br/>蓝头 · 摘要<br/>打字机"]
-    C -- "stop 或<br/>5 分钟无活动" --> D["封卡<br/>绿头 · 项目<br/>综合面板"]
-    B -. 心跳 .-> H["启动 hook<br/>自动拉起<br/>僵死重启"]
-    H -. 拉起 .-> B
-    PAD["&nbsp;<br/>&nbsp;"]
-    B ~~~ PAD
+<div align="center">
 
-    style PAD fill:transparent,stroke:none,color:transparent
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/architecture.svg">
+  <img src="assets/architecture-light.svg" width="860" alt="ZCode 飞书桥接工作原理">
+</picture>
+
+</div>
 
 ZCode 每完成一次模型调用，就往 `~/.zcode/cli/rollout/model-io-sess_<会话>.jsonl` 追加一行 `model_io` 记录。`bridge.py` 是一个常驻守护进程，每秒轮询这个目录，从各文件的**末尾**开始读新增行，解析出：
 
